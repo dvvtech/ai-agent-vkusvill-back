@@ -1,6 +1,5 @@
 using AiAgentVkusvill.Api.Models;
 using ModelContextProtocol.Client;
-using ModelContextProtocol.Protocol.Transport;
 using OpenAI;
 using OpenAI.Chat;
 using System.Text.Json;
@@ -15,7 +14,7 @@ public sealed class AiAgentService : IAsyncDisposable
     private readonly SemaphoreSlim _initLock = new(1, 1);
 
     private ChatClient? _chatClient;
-    private IMcpClient? _mcpClient;
+    private McpClient? _mcpClient;
     private List<ChatTool>? _tools;
     private bool _initialized;
 
@@ -56,17 +55,23 @@ public sealed class AiAgentService : IAsyncDisposable
             var openAi = new OpenAIClient(apiKey);
             _chatClient = openAi.GetChatClient(model);
 
-            var transport = new SseClientTransport(new SseClientTransportOptions
-            {
-                Endpoint = new Uri(mcpUrl)
-            });
+            var transport = new HttpClientTransport(
+                    new HttpClientTransportOptions
+                    {
+                        Endpoint =
+                            new Uri(mcpUrl)
+                    });
 
-            _mcpClient = await McpClientFactory.CreateAsync(transport, cancellationToken: ct);
+            _mcpClient = await McpClient.CreateAsync(transport);
 
             await LoadToolsAsync(ct);
 
             _initialized = true;
             _logger.LogInformation("AiAgentService initialized with {ToolCount} tools", _tools?.Count ?? 0);
+        }
+        catch (Exception ex)
+        { 
+        
         }
         finally
         {
@@ -180,13 +185,14 @@ public sealed class AiAgentService : IAsyncDisposable
             var args = ParseArguments(toolCall.FunctionArguments.ToString());
             var mcpResult = await _mcpClient!.CallToolAsync(toolCall.FunctionName, args, cancellationToken: ct);
 
-            var textParts = mcpResult.Content?
-                .Where(c => c.Type == "text")
-                .Select(c => c.Text) ?? [];
-            var text = string.Join("\n", textParts);
+            var text = mcpResult.Content?.FirstOrDefault()?.ToString() ?? "Empty result";
+            //var textParts = mcpResult.Content?
+            //    .Where(c => c.Type == "text")
+            //    .Select(c => c.Text) ?? [];
+            //var text = string.Join("\n", textParts);
 
-            if (string.IsNullOrEmpty(text))
-                text = "Empty result";
+            //if (string.IsNullOrEmpty(text))
+            //    text = "Empty result";
 
             _logger.LogInformation("Tool {ToolName} result: {Result}",
                 toolCall.FunctionName,
