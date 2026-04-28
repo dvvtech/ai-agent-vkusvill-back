@@ -1,0 +1,7 @@
+<Solution>
+  <Folder Name="/deploy/" />
+  <Folder Name="/src/">
+    <Project Path="src/AiAgentVkusvill.Api/AiAgentVkusvill.Api.csproj" />
+  </Folder>
+  <Folder Name="/tests/" />
+</Solution>
