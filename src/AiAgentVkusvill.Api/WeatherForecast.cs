@@ -1,6 +1,6 @@
 namespace AiAgentVkusvill.Api
 {
-    public class WeatherForecast
+    public class WeatherForecast//
     {
         public DateOnly Date { get; set; }
 
