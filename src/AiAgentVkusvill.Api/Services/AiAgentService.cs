@@ -2,6 +2,8 @@ using AiAgentVkusvill.Api.Models;
 using ModelContextProtocol.Client;
 using OpenAI;
 using OpenAI.Chat;
+using System.ClientModel.Primitives;
+using System.Net;
 using System.Text.Json;
 using System.Threading.Channels;
 
@@ -52,17 +54,43 @@ public sealed class AiAgentService : IAsyncDisposable
                          ?? throw new InvalidOperationException("AiSettings:McpUrl not configured");
             var model = _config["AiSettings:Model"] ?? "gpt-4o";
 
-            var openAi = new OpenAIClient(apiKey);
+            var openAiOptions = new OpenAIClientOptions();
+
+            var proxyEnabled = _config.GetValue("ProxySettings:Enabled", false);
+            if (proxyEnabled)
+            {
+                var proxyIp = _config["ProxySettings:Ip"] ?? "";
+                var proxyPort = _config.GetValue("ProxySettings:Port", 0);
+                var proxyLogin = _config["ProxySettings:Login"];
+                var proxyPassword = _config["ProxySettings:Password"];
+
+                var proxyUri = new Uri($"http://{proxyIp}:{proxyPort}");
+                var proxy = new WebProxy(proxyUri);
+
+                if (!string.IsNullOrEmpty(proxyLogin) && !string.IsNullOrEmpty(proxyPassword))
+                {
+                    proxy.Credentials = new NetworkCredential(proxyLogin, proxyPassword);
+                }
+
+                var handler = new HttpClientHandler
+                {
+                    Proxy = proxy,
+                    UseProxy = true,
+                };
+
+                openAiOptions.Transport = new HttpClientPipelineTransport(new HttpClient(handler));
+                _logger.LogInformation("OpenAI client configured with proxy {ProxyIp}:{ProxyPort}", proxyIp, proxyPort);
+            }
+
+            var openAi = new OpenAIClient(new System.ClientModel.ApiKeyCredential(apiKey), openAiOptions);
             _chatClient = openAi.GetChatClient(model);
 
-            var transport = new HttpClientTransport(
-                    new HttpClientTransportOptions
-                    {
-                        Endpoint =
-                            new Uri(mcpUrl)
-                    });
+            var transport = new HttpClientTransport(new HttpClientTransportOptions
+            {
+                Endpoint = new Uri(mcpUrl)
+            });
 
-            _mcpClient = await McpClient.CreateAsync(transport);
+            _mcpClient = await McpClient.CreateAsync(transport, cancellationToken: ct);
 
             await LoadToolsAsync(ct);
 
@@ -70,8 +98,9 @@ public sealed class AiAgentService : IAsyncDisposable
             _logger.LogInformation("AiAgentService initialized with {ToolCount} tools", _tools?.Count ?? 0);
         }
         catch (Exception ex)
-        { 
-        
+        {
+            _logger.LogError(ex, "Failed to initialize AiAgentService");
+            throw;
         }
         finally
         {
@@ -186,13 +215,6 @@ public sealed class AiAgentService : IAsyncDisposable
             var mcpResult = await _mcpClient!.CallToolAsync(toolCall.FunctionName, args, cancellationToken: ct);
 
             var text = mcpResult.Content?.FirstOrDefault()?.ToString() ?? "Empty result";
-            //var textParts = mcpResult.Content?
-            //    .Where(c => c.Type == "text")
-            //    .Select(c => c.Text) ?? [];
-            //var text = string.Join("\n", textParts);
-
-            //if (string.IsNullOrEmpty(text))
-            //    text = "Empty result";
 
             _logger.LogInformation("Tool {ToolName} result: {Result}",
                 toolCall.FunctionName,
