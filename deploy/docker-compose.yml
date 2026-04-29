@@ -1,0 +1,42 @@
+services:
+  aiagent_vkusvill_api:    
+    image: ghcr.io/dvvtech/ai-agent-vkusvill-back:latest
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Prod      
+    networks:
+      - public-network5
+    secrets:
+      - AiSettings__ApiKey
+      - ProxySettings__Ip      
+      - ProxySettings__Login
+      - ProxySettings__Password
+    deploy:
+      mode: replicated
+      replicas: 1
+      restart_policy:
+        condition: any
+        delay: 5s
+        max_attempts: 3
+      labels:
+        - "traefik.enable=true"
+        - "traefik.http.routers.aiagent-vkusvill-api.rule=Host(`api.cloud-platform.pro`) && PathPrefix(`/ai-agent-vkusvill`)"
+        - "traefik.http.routers.aiagent-vkusvill-api.entrypoints=websecure"
+        - "traefik.http.routers.aiagent-vkusvill-api.tls.certresolver=letsencrypt"
+        - "traefik.http.services.aiagent-vkusvill-api.loadbalancer.server.port=8080"
+        - "traefik.http.middlewares.aiagent-vkusvill-stripprefix.stripprefix.prefixes=/ai-agent-vkusvill"
+        - "traefik.http.routers.aiagent-vkusvill-api.middlewares=aiagent-vkusvill-stripprefix"      
+
+networks:
+  public-network5:
+    external: true
+    name: public-network5
+
+secrets:
+  AiSettings__ApiKey:
+    external: true  
+  ProxySettings__Ip:
+    external: true
+  ProxySettings__Login:
+    external: true
+  ProxySettings__Password:
+    external: true

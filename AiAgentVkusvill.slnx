@@ -1,5 +1,7 @@
 <Solution>
-  <Folder Name="/deploy/" />
+  <Folder Name="/deploy/">
+    <File Path="deploy/docker-compose.yml" />
+  </Folder>
   <Folder Name="/src/">
     <Project Path="src/AiAgentVkusvill.Api/AiAgentVkusvill.Api.csproj" />
   </Folder>

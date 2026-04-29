@@ -74,8 +74,7 @@ public sealed class SessionManager : IHostedService, IDisposable
 
     private void RemoveExpiredSessions()
     {
-        var timeout = TimeSpan.FromHours(
-            _config.GetValue("AiSettings:SessionTimeoutHours", 24));
+        var timeout = TimeSpan.FromHours(_aiConfig.SessionTimeoutHours);
         var cutoff = DateTime.UtcNow - timeout;
 
         foreach (var kvp in _sessions)
