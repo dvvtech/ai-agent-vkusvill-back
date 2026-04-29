@@ -22,7 +22,7 @@ public sealed class ChatController : ControllerBase
         _agentService = agentService;
         _sessionManager = sessionManager;
         _logger = logger;
-    }
+    }    
 
     [HttpPost("send")]
     public async Task Send([FromBody] ChatRequest request, CancellationToken ct)
@@ -108,5 +108,13 @@ public sealed class ChatController : ControllerBase
         }
 
         return sessionId;
+    }
+
+
+    [HttpGet("test")]
+    public ActionResult<string> Test()
+    {
+        _logger.LogInformation("hello");
+        return Ok("1278");
     }
 }
