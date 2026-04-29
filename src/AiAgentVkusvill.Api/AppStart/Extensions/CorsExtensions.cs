@@ -15,16 +15,14 @@
                         policy.WithOrigins("https://vkusvillpodbor.ru")
                               .AllowAnyHeader()
                               .AllowAnyMethod()
-                              .AllowCredentials(); // Разрешить куки
+                              .AllowCredentials();
                     });
 
                 options.AddPolicy(AllowAllPolicy, policy =>
                 {
-                    policy.AllowAnyOrigin()  // Разрешить любой источник
-                                             .AllowCredentials() // Разрешить куки
-                          .AllowAnyMethod()  // Разрешить любые HTTP-методы (GET, POST, PUT и т. д.)
-                          .AllowAnyHeader() // Разрешить любые заголовки
-                          .AllowCredentials(); // Разрешить куки
+                    policy.AllowAnyOrigin()
+                          .AllowAnyMethod()
+                          .AllowAnyHeader();
                 });
             });
         }

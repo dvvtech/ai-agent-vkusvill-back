@@ -2,6 +2,7 @@ using AiAgentVkusvill.Api.Configuration;
 using AiAgentVkusvill.Api.Models;
 using Microsoft.Extensions.Options;
 using ModelContextProtocol.Client;
+using ModelContextProtocol.Protocol;
 using OpenAI;
 using OpenAI.Chat;
 using System.ClientModel.Primitives;
@@ -171,13 +172,6 @@ public sealed class AiAgentService : IAsyncDisposable
             {
                 var toolResult = await ExecuteToolAsync(toolCall, ct);
                 history.Add(new ToolChatMessage(toolCall.Id, toolResult));
-
-                await writer.WriteAsync(new SseEvent("tool_result",
-                    JsonSerializer.Serialize(new
-                    {
-                        toolName = toolCall.FunctionName,
-                        result = toolResult
-                    })), ct);
             }
         }
 

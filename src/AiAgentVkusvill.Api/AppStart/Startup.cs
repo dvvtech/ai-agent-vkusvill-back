@@ -21,8 +21,10 @@ namespace AiAgentVkusvill.Api.AppStart
             }
             else
             {
-                _builder.Services.ConfigureCors();
-            }            
+                //_builder.Services.ConfigureCors();
+            }
+
+            _builder.Services.ConfigureCors();
 
             InitConfigs();
             ConfigureServices();
