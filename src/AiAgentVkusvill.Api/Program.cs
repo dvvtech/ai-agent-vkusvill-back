@@ -1,27 +1,14 @@
-using AiAgentVkusvill.Api.Services;
+using AiAgentVkusvill.Api.AppStart;
+using AiAgentVkusvill.Api.AppStart.Extensions;
 
 var builder = WebApplication.CreateBuilder(args);
 
-builder.Services.AddControllers();
-builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen();
-builder.Services.AddSingleton<AiAgentService>();
-builder.Services.AddSingleton<SessionManager>();
-builder.Services.AddHostedService(sp => sp.GetRequiredService<SessionManager>());
-
-builder.Services.AddCors(options =>
-{
-    options.AddDefaultPolicy(policy =>
-    {
-        policy.AllowAnyOrigin()
-              .AllowAnyMethod()
-              .AllowAnyHeader();
-    });
-});
+var startup = new Startup(builder);
+startup.Initialize();
 
 var app = builder.Build();
 
-app.UseCors();
+app.ApplyCors();
 
 if (app.Environment.IsDevelopment())
 {
@@ -29,7 +16,7 @@ if (app.Environment.IsDevelopment())
     app.UseSwaggerUI();
 }
 else
-{
+{    
     app.UseHttpsRedirection();
 }
 

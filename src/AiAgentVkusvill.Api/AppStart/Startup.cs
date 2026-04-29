@@ -1,4 +1,6 @@
-﻿using AiAgentVkusvill.Api.Configuration;
+﻿using AiAgentVkusvill.Api.AppStart.Extensions;
+using AiAgentVkusvill.Api.Configuration;
+using AiAgentVkusvill.Api.Services;
 
 namespace AiAgentVkusvill.Api.AppStart
 {
@@ -19,21 +21,12 @@ namespace AiAgentVkusvill.Api.AppStart
             }
             else
             {
-                //_builder.Services.ConfigureCors();
-            }
-
-            // Регистрация HttpClientFactory
-            _builder.Services.AddHttpClient();
+                _builder.Services.ConfigureCors();
+            }            
 
             InitConfigs();
-            /*ConfigureClientAPI();
             ConfigureServices();
-            ConfigureRateLimiting();
-
-            _builder.Services
-                .AddHealthChecks()
-                .AddCheck<ProxyHealthCheck>(nameof(ProxyHealthCheck));*/
-
+            
             _builder.Services.AddControllers();
         }
 
@@ -46,6 +39,13 @@ namespace AiAgentVkusvill.Api.AppStart
 
             _builder.Services.Configure<AiConfig>(_builder.Configuration.GetSection(AiConfig.SectionName));
             _builder.Services.Configure<ProxyConfig>(_builder.Configuration.GetSection(ProxyConfig.SectionName));
+        }
+
+        private void ConfigureServices()
+        { 
+            _builder.Services.AddSingleton<AiAgentService>();
+            _builder.Services.AddSingleton<SessionManager>();
+            _builder.Services.AddHostedService(sp => sp.GetRequiredService<SessionManager>());
         }
     }
 }
