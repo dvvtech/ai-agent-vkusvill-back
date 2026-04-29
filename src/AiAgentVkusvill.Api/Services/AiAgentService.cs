@@ -1,4 +1,6 @@
+using AiAgentVkusvill.Api.Configuration;
 using AiAgentVkusvill.Api.Models;
+using Microsoft.Extensions.Options;
 using ModelContextProtocol.Client;
 using OpenAI;
 using OpenAI.Chat;
@@ -10,8 +12,7 @@ using System.Threading.Channels;
 namespace AiAgentVkusvill.Api.Services;
 
 public sealed class AiAgentService : IAsyncDisposable
-{
-    private readonly IConfiguration _config;
+{    
     private readonly ILogger<AiAgentService> _logger;
     private readonly SemaphoreSlim _initLock = new(1, 1);
 
@@ -20,22 +21,16 @@ public sealed class AiAgentService : IAsyncDisposable
     private List<ChatTool>? _tools;
     private bool _initialized;
 
-    private const string SystemPrompt = """
-        Ты AI агент Вкусовилл — помогаешь пользователю собирать корзину покупок.
+    private readonly AiConfig _aiConfig;
+    private readonly ProxyConfig _proxyConfig;    
 
-        Если для ответа нужен инструмент — обязательно вызывай tool.
-        Если можешь ответить сам — не вызывай инструмент.
-        Для инструментов строго используй параметры схемы.
-        Не вызывай search без query.
-
-        Если пользователь хочет начать сборку новой корзины —
-        сообщи ему, что можно нажать кнопку «Новая корзина»
-        для сброса текущего заказа и начала с чистого листа.
-        """;
-
-    public AiAgentService(IConfiguration config, ILogger<AiAgentService> logger)
+    public AiAgentService(
+        IOptions<AiConfig> aiConfig,
+        IOptions<ProxyConfig> proxyConfig,        
+        ILogger<AiAgentService> logger)
     {
-        _config = config;
+        _aiConfig = aiConfig.Value;
+        _proxyConfig = proxyConfig.Value;        
         _logger = logger;
     }
 
@@ -48,28 +43,15 @@ public sealed class AiAgentService : IAsyncDisposable
         {
             if (_initialized) return;
 
-            var apiKey = _config["AiSettings:ApiKey"]
-                         ?? throw new InvalidOperationException("AiSettings:ApiKey not configured");
-            var mcpUrl = _config["AiSettings:McpUrl"]
-                         ?? throw new InvalidOperationException("AiSettings:McpUrl not configured");
-            var model = _config["AiSettings:Model"] ?? "gpt-4o";
-
-            var openAiOptions = new OpenAIClientOptions();
-
-            var proxyEnabled = _config.GetValue("ProxySettings:Enabled", false);
-            if (proxyEnabled)
-            {
-                var proxyIp = _config["ProxySettings:Ip"] ?? "";
-                var proxyPort = _config.GetValue("ProxySettings:Port", 0);
-                var proxyLogin = _config["ProxySettings:Login"];
-                var proxyPassword = _config["ProxySettings:Password"];
-
-                var proxyUri = new Uri($"http://{proxyIp}:{proxyPort}");
+            var openAiOptions = new OpenAIClientOptions();            
+            if (_proxyConfig.Enabled)
+            {                
+                var proxyUri = new Uri($"http://{_proxyConfig.Ip}:{_proxyConfig.Port}");
                 var proxy = new WebProxy(proxyUri);
 
-                if (!string.IsNullOrEmpty(proxyLogin) && !string.IsNullOrEmpty(proxyPassword))
+                if (!string.IsNullOrEmpty(_proxyConfig.Login) && !string.IsNullOrEmpty(_proxyConfig.Password))
                 {
-                    proxy.Credentials = new NetworkCredential(proxyLogin, proxyPassword);
+                    proxy.Credentials = new NetworkCredential(_proxyConfig.Login, _proxyConfig.Password);
                 }
 
                 var handler = new HttpClientHandler
@@ -79,15 +61,15 @@ public sealed class AiAgentService : IAsyncDisposable
                 };
 
                 openAiOptions.Transport = new HttpClientPipelineTransport(new HttpClient(handler));
-                _logger.LogInformation("OpenAI client configured with proxy {ProxyIp}:{ProxyPort}", proxyIp, proxyPort);
+                _logger.LogInformation("OpenAI client configured with proxy {ProxyIp}:{ProxyPort}", _proxyConfig.Ip, _proxyConfig.Port);
             }
 
-            var openAi = new OpenAIClient(new System.ClientModel.ApiKeyCredential(apiKey), openAiOptions);
-            _chatClient = openAi.GetChatClient(model);
+            var openAi = new OpenAIClient(new System.ClientModel.ApiKeyCredential(_aiConfig.ApiKey), openAiOptions);
+            _chatClient = openAi.GetChatClient(_aiConfig.Model);
 
             var transport = new HttpClientTransport(new HttpClientTransportOptions
             {
-                Endpoint = new Uri(mcpUrl)
+                Endpoint = new Uri(_aiConfig.McpUrl)
             });
 
             _mcpClient = await McpClient.CreateAsync(transport, cancellationToken: ct);
@@ -138,8 +120,6 @@ public sealed class AiAgentService : IAsyncDisposable
     {
         await EnsureInitializedAsync(ct);
 
-        var maxToolRounds = _config.GetValue("AiSettings:MaxToolRounds", 8);
-
         history.Add(new UserChatMessage(userMessage));
 
         var options = new ChatCompletionOptions { Temperature = 0.1f };
@@ -147,7 +127,7 @@ public sealed class AiAgentService : IAsyncDisposable
         foreach (var tool in _tools!)
             options.Tools.Add(tool);
 
-        for (int round = 0; round < maxToolRounds; round++)
+        for (int round = 0; round < _aiConfig.MaxToolRounds; round++)
         {
             _logger.LogInformation("Round {Round}", round + 1);
 

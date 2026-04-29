@@ -1,4 +1,6 @@
+using AiAgentVkusvill.Api.Configuration;
 using AiAgentVkusvill.Api.Models;
+using Microsoft.Extensions.Options;
 using OpenAI.Chat;
 using System.Collections.Concurrent;
 
@@ -7,20 +9,21 @@ namespace AiAgentVkusvill.Api.Services;
 public sealed class SessionManager : IHostedService, IDisposable
 {
     private readonly ConcurrentDictionary<string, ChatSession> _sessions = new();
-    private readonly ILogger<SessionManager> _logger;
-    private readonly IConfiguration _config;
+    private readonly ILogger<SessionManager> _logger;    
+    private readonly AiConfig _aiConfig;
     private Timer? _cleanupTimer;
 
-    public SessionManager(ILogger<SessionManager> logger, IConfiguration config)
+    public SessionManager(
+        IOptions<AiConfig> aiConfig,
+        ILogger<SessionManager> logger)
     {
-        _logger = logger;
-        _config = config;
+        _aiConfig = aiConfig.Value;
+        _logger = logger;        
     }
 
     public ChatSession GetOrCreateSession(string sessionId)
     {
-        var timeout = TimeSpan.FromHours(
-            _config.GetValue("AiSettings:SessionTimeoutHours", 24));
+        var timeout = TimeSpan.FromHours(_aiConfig.SessionTimeoutHours);
 
         var session = _sessions.AddOrUpdate(
             sessionId,
