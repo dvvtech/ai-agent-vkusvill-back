@@ -18,7 +18,10 @@ public sealed class SessionManager : IHostedService, IDisposable
         ILogger<SessionManager> logger)
     {
         _aiConfig = aiConfig.Value;
-        _logger = logger;        
+        _logger = logger;
+
+        _logger.LogInformation($"val: {_aiConfig.ApiKey}");
+        _logger.LogInformation($"url: {_aiConfig.McpUrl}");
     }
 
     public ChatSession GetOrCreateSession(string sessionId)
