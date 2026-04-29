@@ -5,9 +5,9 @@ using System.Text.Json;
 using System.Threading.Channels;
 
 namespace AiAgentVkusvill.Api.Controllers;
-
+//https://api.cloud-platform.pro/ai-agent-vkusvill/chat/test
 [ApiController]
-[Route("api/[controller]")]
+[Route("chat")]
 public sealed class ChatController : ControllerBase
 {
     private readonly AiAgentService _agentService;
