@@ -5,7 +5,7 @@ using System.Text.Json;
 using System.Threading.Channels;
 
 namespace AiAgentVkusvill.Api.Controllers;
-//https://api.cloud-platform.pro/ai-agent-vkusvill/chat/test
+
 [ApiController]
 [Route("chat")]
 public sealed class ChatController : ControllerBase
@@ -110,7 +110,7 @@ public sealed class ChatController : ControllerBase
         return sessionId;
     }
 
-
+    //https://api.cloud-platform.pro/ai-agent-vkusvill/chat/test
     [HttpGet("test")]
     public ActionResult<string> Test()
     {

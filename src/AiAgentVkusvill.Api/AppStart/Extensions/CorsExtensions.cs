@@ -12,18 +12,19 @@
                 options.AddPolicy(AllowSpecificOriginPolicy,
                     policy =>
                     {
-                        policy.AllowAnyOrigin()//WithOrigins("https://vkusvillpodbor.ru")
-                                               //.AllowCredentials() // Разрешить куки
+                        policy.WithOrigins("https://vkusvillpodbor.ru")
                               .AllowAnyHeader()
-                              .AllowAnyMethod();
+                              .AllowAnyMethod()
+                              .AllowCredentials(); // Разрешить куки
                     });
 
                 options.AddPolicy(AllowAllPolicy, policy =>
                 {
                     policy.AllowAnyOrigin()  // Разрешить любой источник
-                                             //.AllowCredentials() // Разрешить куки
+                                             .AllowCredentials() // Разрешить куки
                           .AllowAnyMethod()  // Разрешить любые HTTP-методы (GET, POST, PUT и т. д.)
-                          .AllowAnyHeader(); // Разрешить любые заголовки
+                          .AllowAnyHeader() // Разрешить любые заголовки
+                          .AllowCredentials(); // Разрешить куки
                 });
             });
         }
@@ -36,8 +37,8 @@
             }
             else
             {
-                //app.UseCors(AllowAllPolicy);
-                app.UseCors(AllowSpecificOriginPolicy);
+                app.UseCors(AllowAllPolicy);
+                //app.UseCors(AllowSpecificOriginPolicy);
             }
         }
     }
