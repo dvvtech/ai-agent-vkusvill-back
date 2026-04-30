@@ -35,8 +35,8 @@
             }
             else
             {
-                app.UseCors(AllowAllPolicy);
-                //app.UseCors(AllowSpecificOriginPolicy);
+                //app.UseCors(AllowAllPolicy);
+                app.UseCors(AllowSpecificOriginPolicy);
             }
         }
     }
