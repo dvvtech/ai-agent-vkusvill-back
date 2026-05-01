@@ -43,8 +43,7 @@ public sealed class ChatController : ControllerBase
         });
 
         await session.Lock.WaitAsync(ct);
-        var processingTask = ProcessWithReleaseAsync(
-            session, request.Message, channel.Writer, ct);
+        var processingTask = ProcessWithReleaseAsync(session, request.Message, channel.Writer, ct);
 
         try
         {

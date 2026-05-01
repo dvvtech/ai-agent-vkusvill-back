@@ -2,7 +2,6 @@ using AiAgentVkusvill.Api.Configuration;
 using AiAgentVkusvill.Api.Models;
 using Microsoft.Extensions.Options;
 using ModelContextProtocol.Client;
-using ModelContextProtocol.Protocol;
 using OpenAI;
 using OpenAI.Chat;
 using System.ClientModel.Primitives;
@@ -67,6 +66,7 @@ public sealed class AiAgentService : IAsyncDisposable
 
             var openAi = new OpenAIClient(new System.ClientModel.ApiKeyCredential(_aiConfig.ApiKey), openAiOptions);
             _chatClient = openAi.GetChatClient(_aiConfig.Model);
+
 
             var transport = new HttpClientTransport(new HttpClientTransportOptions
             {
